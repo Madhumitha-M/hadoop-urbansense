@@ -1,0 +1,92 @@
+version: "3.8"
+
+services:
+ namenode:
+   image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
+   container_name: namenode
+   hostname: namenode
+   restart: unless-stopped
+   ports:
+     - "9870:9870"   # NameNode Web UI
+     - "9000:9000"   # HDFS RPC
+   volumes:
+     - namenode_data:/hadoop/dfs/name
+     - ./data:/demo-data
+   environment:
+     - CLUSTER_NAME=urban-hadoop-demo
+     - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
+     - HDFS_CONF_dfs_replication=2
+     - HDFS_CONF_dfs_permissions_enabled=false
+
+ datanode1:
+   image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
+   container_name: datanode1
+   hostname: datanode1
+   restart: unless-stopped
+   depends_on:
+     - namenode
+   ports:
+     - "9864:9864"
+   volumes:
+     - datanode1_data:/hadoop/dfs/data
+   environment:
+     - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
+     - HDFS_CONF_dfs_replication=2
+     - HDFS_CONF_dfs_permissions_enabled=false
+     - SERVICE_PRECONDITION=namenode:9870
+
+ datanode2:
+   image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
+   container_name: datanode2
+   hostname: datanode2
+   restart: unless-stopped
+   depends_on:
+     - namenode
+   ports:
+     - "9865:9864"
+   volumes:
+     - datanode2_data:/hadoop/dfs/data
+   environment:
+     - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
+     - HDFS_CONF_dfs_replication=2
+     - HDFS_CONF_dfs_permissions_enabled=false
+     - SERVICE_PRECONDITION=namenode:9870
+
+ resourcemanager:
+   image: bde2020/hadoop-resourcemanager:2.0.0-hadoop3.2.1-java8
+   container_name: resourcemanager
+   hostname: resourcemanager
+   restart: unless-stopped
+   depends_on:
+     - namenode
+     - datanode1
+     - datanode2
+   ports:
+     - "8088:8088"   # YARN ResourceManager UI
+   environment:
+     - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
+     - YARN_CONF_yarn_resourcemanager_hostname=resourcemanager
+     - SERVICE_PRECONDITION=namenode:9870 datanode1:9864 datanode2:9864
+
+ historyserver:
+   image: bde2020/hadoop-historyserver:2.0.0-hadoop3.2.1-java8
+   container_name: historyserver
+   hostname: historyserver
+   restart: unless-stopped
+   depends_on:
+     - namenode
+     - resourcemanager
+   ports:
+     - "8188:8188"   # History Server UI
+   volumes:
+     - historyserver_data:/hadoop/yarn/timeline
+   environment:
+     - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
+     - YARN_CONF_yarn_resourcemanager_hostname=resourcemanager
+     - SERVICE_PRECONDITION=namenode:9870 resourcemanager:8088
+
+volumes:
+ namenode_data:
+ datanode1_data:
+ datanode2_data:
+ historyserver_data:
