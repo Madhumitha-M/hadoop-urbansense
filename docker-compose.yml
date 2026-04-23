@@ -24,7 +24,13 @@ services:
    hostname: datanode1
    restart: unless-stopped
    depends_on:
-     - namenode
+    - namenode
+   healthcheck:
+        test: ["CMD-SHELL", "curl -fsS http://localhost:9864/ > /dev/null || exit 1"]
+        interval: 20s
+        timeout: 10s
+        retries: 5
+        start_period: 60s
    ports:
      - "9864:9864"
    volumes:
@@ -41,7 +47,13 @@ services:
    hostname: datanode2
    restart: unless-stopped
    depends_on:
-     - namenode
+      - namenode
+   healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:9864/ > /dev/null || exit 1"]
+      interval: 20s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
    ports:
      - "9865:9864"
    volumes:
@@ -61,6 +73,12 @@ services:
      - namenode
      - datanode1
      - datanode2
+   healthcheck:
+     test: ["CMD-SHELL", "curl -fsS http://localhost:8088/ > /dev/null || exit 1"]
+     interval: 20s
+     timeout: 10s
+     retries: 5
+     start_period: 60s
    ports:
      - "8088:8088"   # YARN ResourceManager UI
    environment:
@@ -76,6 +94,12 @@ services:
    depends_on:
      - namenode
      - resourcemanager
+   healthcheck:
+     test: ["CMD-SHELL", "curl -fsS http://localhost:8188/ > /dev/null || exit 1"]
+     interval: 20s
+     timeout: 10s
+     retries: 5
+     start_period: 60s
    ports:
      - "8188:8188"   # History Server UI
    volumes:
